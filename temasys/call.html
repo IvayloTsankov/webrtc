@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<title>Call example</title>
+<body>
+    <video id="src"></video>
+    <video id="dst"></video>
+</body>
+<script src="adapter.debug.js"></script>
+<script src="temasyscall.js"></script>
+<script>
+    var src = document.getElementById('src');
+    var dst = document.getElementById('dst');
+
+    var config = {
+        'video': true,
+        'audio': false,
+
+        iceServers: [
+            {
+                'url': 'turn:numb.viagenie.ca',
+                'credential': 'muazkh',
+                'username': 'webrtc@live.com'
+            }
+        ]
+    };
+
+    var success = function(p1, p2) {
+    };
+
+    var fail = function(err) {
+        console.log(err);
+    };
+
+    var call = new TemasysCall(success, fail, config, src, dst);
+</script>
+</html>
