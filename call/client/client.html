@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<body>
+</body>
+<script>
+    var ws = new WebSocket('ws://localhost:8000');
+    ws.onmessage = function(e) {
+        console.log(e.data);
+    };
+
+    var loop = setInterval(function() {
+        ws.send('Message');
+    }, 1000);
+</script>
+</html>
