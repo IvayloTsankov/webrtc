@@ -5,12 +5,12 @@ function Session(sessionId) {
     var messages = [];
     var self = this;
 
-    var verify = function(peer, message) {
+    var verify = function(peer) {
         return peer === active || peer === passive;
     };
 
     // proxy messages between peers
-    var send = function(message) {
+    var send = function(packet) {
         if (!self.isConnected()) {
             console.log('try to send without established connection');
             return false;
@@ -20,8 +20,9 @@ function Session(sessionId) {
         // is FROM active user else it is from passive user
         // 'to' variable is assigned to passive if message's active_user is true
         // and vise versa
-        var to = message.active_user ? passive : active;
-        to.send(JSON.stringify(message));
+        var to = packet.active_user ? passive : active;
+        console.log('session send to peer: ', packet);
+        to.send(JSON.stringify(packet));
 
         return true;
     };
@@ -60,88 +61,87 @@ function Session(sessionId) {
     };
 
     this.removePeer = function(peer) {
+        self.removeMessages(peer);
         if (peer === active) {
-            self.removeMessages(peer);
             active = null;
-            return true;
-        }
-
-        if (peer === passive) {
-            self.removeMessages(peer);
+        } else if (peer === passive) {
             passive = null;
-            return true;
+        } else {
+            return false;
         }
 
-        return false;
+        return true;
     };
 
     this.isConnected = function() {
         return !!(active && passive);
     };
 
-    this.addMessage = function(peer, message) {
-        if (!verify(peer, message)) {
-            console.log('fail to verify message: ', message);
+    this.addMessage = function(peer, packet) {
+        if (!verify(peer)) {
+            console.log('fail to verify peer for packet: ', packet);
             return false;
         }
 
+        console.log('add packet: ', packet);
         // Here we can save messages in db
-        messages.push({
-            'peer': peer,
-            'message': message
-        });
+        messages.push(packet);
 
-        send(message);
+        send(packet);
         return true;
     };
 
-    this.removeMessage = function(peer, message) {
-        if (!verifyPeer(peer)) {
+    this.removeMessage = function(peer, rPacket) {
+        if (!verify(peer)) {
             return false;
         }
 
-        var msgIndex = -1;
-        messages.find(function(it, index) {
-            if (it.peer === peer && it.message === message) {
-                msgIndex = index;
-                return true;
+        var isActive = !!(peer === active) ? true : false;
+        for (var i in messages) {
+            var packet = messages[i];
+            if (packet.active_user === isActive &&
+                packet.payload.message === rPacket.payload.message) {
+                    messages.splice(i, 1);
+                    return true;
             }
-        }); 
-
-        if (msgIndex !== -1) {
-            messages.splice(msgIndex);
         }
 
-        return true;
+        return false;
     };
 
     this.removeMessages = function(peer) {
-        if (!verifyPeer(peer)) {
+        if (!verify(peer)) {
             return false;
         }
 
+        var isActive = !!(peer === active) ? true : false;
         for (var i in messages) {
-            var message = messages[i];
-            if(message.peer === peer) {
-                self.removeMessage(peer, message);
+            var packet = messages[i];
+            if (packet.active_user === isActive) {
+                messages.splice(i, 1);
             }
         }
 
         return true;
     };
 
+    var getPeer = function(isActive) {
+        return isActive ? active : passive;
+    }
+
     this.getHistory = function(peer) {
+        console.log('get history for peer: ', !!(peer === active));
         if (!verify(peer)) {
             console.log('get history failed because peer is not from this session');
             return false;
         }
 
-        // send only messages which doesn't belong to peer
         for (var i in messages) {
-            var wrapper = messages[i];
-            if (peer !== wrapper.peer) {
-                peer.send(JSON.stringify(wrapper.message));
-            }
+            var packet = messages[i];
+            var packetOwner = getPeer(packet.active_user);
+            if (peer != packetOwner) {
+                peer.send(JSON.stringify(packet)); 
+            } 
         }
 
         return true;

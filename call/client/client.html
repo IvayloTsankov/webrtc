@@ -54,7 +54,7 @@
         active.onerror = error;
         active.onmessage = function(ev) {
             activeBuff.push(JSON.parse(ev.data));
-            console.log('active: ', ev);
+            console.log('active: ', ev.data);
         };
 
         active.onopen = function() {
@@ -71,13 +71,13 @@
             passive.onerror = error;
             passive.onmessage = function(ev) {
                 passiveBuff.push(JSON.parse(ev.data));
-                console.log('passive: ', ev);
+                console.log('passive: ', ev.data);
             };
 
             passive.onopen = function() {
                 passive.send(JSON.stringify(joinSession));
                 passive.send(JSON.stringify(answer));
-                candidate.active_user = 'false';
+                candidate.active_user = false;
                 for(var i = 0; i < 3; ++i) {
                     candidate.payload.message = 'passive_candidate' + i.toString();
                     active.send(JSON.stringify(candidate));
