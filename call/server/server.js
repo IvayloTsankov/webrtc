@@ -19,9 +19,18 @@ var onmessage = function(ws, rawMessage) {
         return;
     }
 
+    console.log(message.type);
     switch(message.type) {
         case 'create_session':
-            if(!sm.createSession(ws, message.payload)) {
+            if (!sm.createSession(ws, message.payload)) {
+                ws.send('Fail to create session with id: ', message.payload.session_id);
+                ws.close();
+            }
+
+            break;
+        case 'join_session':
+            if (!sm.joinSession(ws, message.payload)) {
+                ws.send('No session with id: ', message.payload.session_id);
                 ws.close();
             }
 

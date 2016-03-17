@@ -3,13 +3,105 @@
 <body>
 </body>
 <script>
-    var ws = new WebSocket('ws://localhost:8000');
-    ws.onmessage = function(e) {
-        console.log(e.data);
+    var createSession = {
+        'type': 'create_session',
+        'payload': {
+            'active_user': true,
+            'session_id': 123456
+        }
     };
 
-    var loop = setInterval(function() {
-        ws.send('Message');
-    }, 1000);
+    var joinSession = {
+        'type': 'join_session',
+        'payload': {
+            'active_user': false,
+            'session_id': 123456
+        }
+    };
+
+    var offer = {
+        'type': 'offer',
+        'payload': {
+            'active_user': true,
+            'message': 'offer1'
+        }
+    };
+
+    var answer = {
+        'type': 'answer',
+        'payload': {
+            'active_user': true,
+            'message': 'answer1'
+        }
+    };
+
+    var candidate = {
+        'type': 'candidate',
+        'payload': {
+            'active_user': true,
+            'message': 'candidate1'
+        }
+    };
+
+    function error(err) {
+        console.log(err);
+    };
+
+    function TestOne() {
+        var activeBuff = [];
+        var passiveBuff = [];
+
+        var active = new WebSocket('ws://localhost:8000');
+        active.onerror = error;
+        active.onmessage = function(ev) {
+            activeBuff.push(JSON.parse(ev.data));
+            console.log('active: ', ev);
+        };
+
+        active.onopen = function() {
+            active.send(JSON.stringify(createSession));
+            active.send(JSON.stringify(offer));
+
+            for(var i = 0; i < 3; ++i) {
+                candidate.payload.message = 'active_candidate' + i.toString();
+                active.send(JSON.stringify(candidate));
+            }
+
+            // passive user enters the session
+            var passive = new WebSocket('ws://localhost:8000');
+            passive.onerror = error;
+            passive.onmessage = function(ev) {
+                passiveBuff.push(JSON.parse(ev.data));
+                console.log('passive: ', ev);
+            };
+
+            passive.onopen = function() {
+                passive.send(JSON.stringify(joinSession));
+                passive.send(JSON.stringify(answer));
+                for(var i = 0; i < 3; ++i) {
+                    candidate.payload.message = 'passive_candidate' + i.toString();
+                    active.send(JSON.stringify(candidate));
+                }
+
+            };
+
+            setTimeout(function() {
+                if (passiveBuff[0] === 'offer' &&
+                    passiveBuff[1] === 'active_candidate0' &&
+                    passiveBuff[2] === 'active_candidate1' &&
+                    passiveBuff[3] === 'active_candidate2' &&
+                    activeBuff[0] === 'answer' &&
+                    activeBuff[1] === 'passive_candidate0' &&
+                    activeBuff[2] === 'passive_candidate1' &&
+                    activeBuff[3] === 'passive_candidate2') {
+                        console.log('Test ONE passed');
+                } else {
+                    console.log('Test ONE failed');
+                }
+            }, 4000);
+        }
+    };
+
+    TestOne();
 </script>
 </html>

@@ -1,6 +1,6 @@
-// create session
+// create session or join to session
 {
-    'type': 'create_session',
+    'type': 'create_session/join_session',
     'payload': {
         'session_id': 475984359,
         'active_user': true/false

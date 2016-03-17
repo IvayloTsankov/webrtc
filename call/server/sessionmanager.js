@@ -5,32 +5,39 @@ function SessionManager() {
     var sessions = {};
     var self = this;
 
+    var setSession = function(session, id) {
+        sessions[id] = session;
+    }
+
     this.createSession = function(ws, payload) {
         var sessionId = payload.session_id;
         var userActive = payload.active_user;
 
-        var session = null;
-
-        // if session exists try to add peer to it
-        var keys = Object.keys(sessions);
-        for(var i in keys) {
-            var sessionIt = sessions[keys[i]];
-            if (sessionIt.getId() === sessionId) {
-                session = sessionIt; 
-                console.log('use session: ', sessionId);
-                break;
-            }
+        var session = self.getSession(sessionId);
+        if (session) {
+            console.log('session with id %d is already created', sessionId);
+            return false;
         }
 
+        session = new Session(sessionId);
+        setSession(session, sessionId);
+        return session.addPeer(ws, userActive);
+    };
+
+    this.joinSession = function(ws, payload) {
+        var sessionId = payload.session_id;
+        var userActive = payload.active_user;
+
+        var session = self.getSession(sessionId);
         if (!session) {
-            session = new Session(sessionId);
-            sessions[sessionId] = session;
-            console.log('create session: ', sessionId);
+            console.log('no session with id: ', sessionId);
+            return false;
         }
 
         session.addPeer(ws, userActive);
-        console.log('session connected: ', session.isConnected());
-        return true;
+        var sessionStatus = session.isConnected();
+        console.log('session status: ', sessionStatus);
+        return sessionStatus;
     };
 
     this.deleteSession = function(ws, payload) {

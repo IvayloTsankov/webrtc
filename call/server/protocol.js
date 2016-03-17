@@ -44,6 +44,7 @@ var validateInput = function(ws, rawMessage) {
 
     switch(message.type) {
         case 'create_session':
+        case 'join_session':
         case 'delete_session':
             if (validateSession(message.payload)) {
                 return message;
