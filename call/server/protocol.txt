@@ -1,0 +1,26 @@
+// create session
+{
+    'type': 'create_session',
+    'payload': {
+        'session_id': 475984359,
+        'active_user': true/false
+    }
+}
+
+// delete session
+{
+    'type': 'delete_session',
+    'payload': {
+        'session_id': 475984359,
+        'active_user': true/false
+    }
+}
+
+// offer or answer or candidate
+{
+    'type': 'offer/answer/candidate',
+    'payload': {
+        'active_user': true/false,
+        'message': 'stringified offer/answer/candidate is here'
+    }
+}
