@@ -1,26 +1,23 @@
 // create session or join to session
 {
     'type': 'create_session/join_session',
-    'payload': {
-        'session_id': 475984359,
-        'active_user': true/false
-    }
+    'active_user': true/false
+    'session_id': 475984359,
 }
 
 // delete session
 {
     'type': 'delete_session',
-    'payload': {
-        'session_id': 475984359,
-        'active_user': true/false
-    }
+    'active_user': true/false
+    'session_id': 475984359,
 }
 
 // offer or answer or candidate
 {
     'type': 'offer/answer/candidate',
+    'active_user': true/false,
+    'session_id': 475984359,
     'payload': {
-        'active_user': true/false,
         'message': 'stringified offer/answer/candidate is here'
     }
 }

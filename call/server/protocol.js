@@ -4,18 +4,10 @@ var validateSession = function(payload) {
         return false;
     }
 
-    if (!('active_user' in payload)) {
-        return false;
-    }
-
     return true;
 };
 
 var validateSignalling = function(payload) {
-    if (!('active_user' in payload)) {
-        return false;
-    }
-
     if (!('message' in payload)) {
         return false;
     }
@@ -34,6 +26,16 @@ var validateInput = function(ws, rawMessage) {
 
     if (!('type' in message)) {
         console.log('no type in message');
+        return false;
+    }
+
+    if (!('active_user' in message)) {
+        console.log('no active_user in message');
+        return false;
+    }
+
+    if (!('session_id' in message)) {
+        console.log('message with no session_id');
         return false;
     }
 
