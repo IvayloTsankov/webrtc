@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WebAudio tests</title>
+</head>
+<body>
+    <audio id="out"></audio>
+</body>
+<script>
+    var context = new AudioContext();
+
+    // create oscillator node
+    var osc = context.createOscillator();
+
+    // connect node to speakers
+    osc.connect(context.destination);
+
+    osc.start(context.currentTime);
+    osc.stop(context.currentTime + 3);
+</script>
+</html>
