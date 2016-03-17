@@ -22,21 +22,21 @@ var onmessage = function(ws, rawMessage) {
     console.log(message.type);
     switch(message.type) {
         case 'create_session':
-            if (!sm.createSession(ws, message.payload)) {
+            if (!sm.createSession(ws, message)) {
                 ws.send('Fail to create session with id: ', message.payload.session_id);
                 ws.close();
             }
 
             break;
         case 'join_session':
-            if (!sm.joinSession(ws, message.payload)) {
+            if (!sm.joinSession(ws, message)) {
                 ws.send('No session with id: ', message.payload.session_id);
                 ws.close();
             }
 
             break;
         case 'delete_session':
-            if (!sm.deleteSession(message.payload)) {
+            if (!sm.deleteSession(message)) {
                 ws.close();
             }
 
@@ -44,10 +44,15 @@ var onmessage = function(ws, rawMessage) {
         case 'offer':
         case 'answer':
         case 'candidate':
-            var session = sm.getSession(message.payload.session_id);
+            var session = sm.getSession(message.session_id);
             if (session) {
-                session.addMessage(message);
+                if (!session.addMessage(ws, message)) {
+                    console.log('Fail to add message');
+                }
+            } else {
+                console.log('Fail to get session');
             }
+
             break;
         default:
             console.log('unsupported message');

@@ -5,40 +5,39 @@
 <script>
     var createSession = {
         'type': 'create_session',
-        'payload': {
-            'active_user': true,
-            'session_id': 123456
-        }
+        'active_user': true,
+        'session_id': 123456
     };
 
     var joinSession = {
         'type': 'join_session',
-        'payload': {
-            'active_user': false,
-            'session_id': 123456
-        }
+        'active_user': false,
+        'session_id': 123456
     };
 
     var offer = {
         'type': 'offer',
+        'active_user': true,
+        'session_id': 123456,
         'payload': {
-            'active_user': true,
             'message': 'offer1'
         }
     };
 
     var answer = {
         'type': 'answer',
+        'active_user': false,
+        'session_id': 123456,
         'payload': {
-            'active_user': true,
             'message': 'answer1'
         }
     };
 
     var candidate = {
         'type': 'candidate',
+        'active_user': true,
+        'session_id': 123456,
         'payload': {
-            'active_user': true,
             'message': 'candidate1'
         }
     };
@@ -78,6 +77,7 @@
             passive.onopen = function() {
                 passive.send(JSON.stringify(joinSession));
                 passive.send(JSON.stringify(answer));
+                candidate.active_user = 'false';
                 for(var i = 0; i < 3; ++i) {
                     candidate.payload.message = 'passive_candidate' + i.toString();
                     active.send(JSON.stringify(candidate));

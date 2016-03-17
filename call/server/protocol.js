@@ -1,69 +1,57 @@
-var validateSession = function(payload) {
-    if (!('session_id' in payload)) {
-        console.log('no session_id in message');
+var validateSignalling = function(packet) {
+    if (!('payload' in packet)) {
+        console.log('empty packet');
+        return false;
+    }
+
+    if (!('message' in packet.payload)) {
+        console.log('no mesage in packet');
         return false;
     }
 
     return true;
 };
 
-var validateSignalling = function(payload) {
-    if (!('message' in payload)) {
-        return false;
-    }
-
-    return true;
-};
-
-var validateInput = function(ws, rawMessage) {
+var validateInput = function(ws, raw) {
     try {
-        var message = JSON.parse(rawMessage);
+        var packet = JSON.parse(raw);
     } catch (err) {
         console.log('Invalid json');
         console.log(err);
         return false;
     }
 
-    if (!('type' in message)) {
-        console.log('no type in message');
+    if (!('type' in packet)) {
+        console.log('no type in packet');
         return false;
     }
 
-    if (!('active_user' in message)) {
-        console.log('no active_user in message');
+    if (!('active_user' in packet)) {
+        console.log('no active_user in packet');
         return false;
     }
 
-    if (!('session_id' in message)) {
-        console.log('message with no session_id');
+    if (!('session_id' in packet)) {
+        console.log('packet with no session_id');
         return false;
     }
 
-    if (!('payload' in message)) {
-        console.log('empty message');
-        return false;
-    }
-
-    switch(message.type) {
+    switch(packet.type) {
         case 'create_session':
         case 'join_session':
         case 'delete_session':
-            if (validateSession(message.payload)) {
-                return message;
-            } else {
-                return null;
-            }
+            return packet;
         case 'offer':
         case 'answer':
         case 'candidate':
-            if (validateSignalling(message.payload)) {
-                return message;
+            if (validateSignalling(packet)) {
+                return packet;
             } else {
                 return null;
             }
         default:
-            console.log('invalid message type: ', message.type);
-            return false;
+            console.log('invalid packet type: ', packet.type);
+            return null;
     }
 };
 

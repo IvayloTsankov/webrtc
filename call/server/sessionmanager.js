@@ -9,9 +9,9 @@ function SessionManager() {
         sessions[id] = session;
     }
 
-    this.createSession = function(ws, payload) {
-        var sessionId = payload.session_id;
-        var userActive = payload.active_user;
+    this.createSession = function(peer, message) {
+        var sessionId = message.session_id;
+        var userActive = message.active_user;
 
         var session = self.getSession(sessionId);
         if (session) {
@@ -21,12 +21,12 @@ function SessionManager() {
 
         session = new Session(sessionId);
         setSession(session, sessionId);
-        return session.addPeer(ws, userActive);
+        return session.addPeer(peer, userActive);
     };
 
-    this.joinSession = function(ws, payload) {
-        var sessionId = payload.session_id;
-        var userActive = payload.active_user;
+    this.joinSession = function(peer, message) {
+        var sessionId = message.session_id;
+        var userActive = message.active_user;
 
         var session = self.getSession(sessionId);
         if (!session) {
@@ -34,20 +34,27 @@ function SessionManager() {
             return false;
         }
 
-        session.addPeer(ws, userActive);
+        session.addPeer(peer, userActive);
+        session.getHistory(peer);
+
         var sessionStatus = session.isConnected();
         console.log('session status: ', sessionStatus);
+
         return sessionStatus;
     };
 
-    this.deleteSession = function(ws, payload) {
-        var sessionId = payload.session_id;
-        var session = sessions[sessionId];
+    this.deleteSession = function(ws, message) {
+        var sessionId = message.session_id;
+        var session = getSession(sessionId);;
+        if (session) {
+            session.close();
+            delete sessions[sessionId];
 
-        session.close();
-        delete sessions[sessionId];
+            return true;
+        }
 
-        return true;
+        console.log('try to delete uknown session');
+        return false;
     };
 
     this.getSession = function(sessionId) {

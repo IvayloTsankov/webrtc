@@ -5,40 +5,23 @@ function Session(sessionId) {
     var messages = [];
     var self = this;
 
-    var verify = function(ws, message) {
-        return ws === active || ws === passive;
+    var verify = function(peer, message) {
+        return peer === active || peer === passive;
     };
 
-    var getHistory = function(peer) {
-        if (!verify(peer)) {
-            return false;
-        }
-
-        // send only messages which doesn't belong to peer
-        for (var i in messages) {
-            var wrapper = messages[i];
-            if (peer != wrapper.peer) {
-                peer.send(wrapper.message);
-            }
-        }
-
-        return true;
-    }
-
     // proxy messages between peers
-    var proxy = function(ws, message) {
+    var send = function(message) {
         if (!self.isConnected()) {
-            console.log('try to proxy without established connection');
+            console.log('try to send without established connection');
             return false;
         }
 
-        if (ws === active) {
-            passive.send(message);
-        }
-
-        if (ws === passive) {
-            active.send(message);
-        }
+        // if message active_user is true means that this message
+        // is FROM active user else it is from passive user
+        // 'to' variable is assigned to passive if message's active_user is true
+        // and vise versa
+        var to = message.active_user ? passive : active;
+        to.send(JSON.stringify(message));
 
         return true;
     };
@@ -49,7 +32,7 @@ function Session(sessionId) {
     };
 
     // add peer to session
-    this.addPeer = function(ws, isActive) {
+    this.addPeer = function(peer, isActive) {
         if (self.isConnected()) {
             console.log('Session is full');
             return false;
@@ -61,12 +44,14 @@ function Session(sessionId) {
         }
 
         if (isActive && active === null) {
-            active = ws;
+            active = peer;
+            console.log('add active peer (session: %d)', id);
             return true;
         }
 
         if(!isActive && passive === null) {
-            passive = ws;
+            passive = peer;
+            console.log('add passive peer (session: %d)', id);
             return true;
         }
 
@@ -74,15 +59,15 @@ function Session(sessionId) {
         return false;
     };
 
-    this.removePeer = function(ws) {
-        if (ws === active) {
-            self.removeMessages(ws);
+    this.removePeer = function(peer) {
+        if (peer === active) {
+            self.removeMessages(peer);
             active = null;
             return true;
         }
 
-        if (ws === passive) {
-            self.removeMessages(ws);
+        if (peer === passive) {
+            self.removeMessages(peer);
             passive = null;
             return true;
         }
@@ -94,30 +79,30 @@ function Session(sessionId) {
         return !!(active && passive);
     };
 
-    this.addMessage = function(ws, message) {
-        if (!verify(ws, message)) {
-            console.log('fail to verify message: ', ws, message);
+    this.addMessage = function(peer, message) {
+        if (!verify(peer, message)) {
+            console.log('fail to verify message: ', message);
             return false;
         }
 
         // Here we can save messages in db
         messages.push({
-            'peer': ws,
+            'peer': peer,
             'message': message
         });
 
-        proxy(ws, message);
+        send(message);
         return true;
     };
 
-    this.removeMessage = function(ws, message) {
-        if (!verifyPeer(ws)) {
+    this.removeMessage = function(peer, message) {
+        if (!verifyPeer(peer)) {
             return false;
         }
 
         var msgIndex = -1;
         messages.find(function(it, index) {
-            if (it.peer === ws && it.message === message) {
+            if (it.peer === peer && it.message === message) {
                 msgIndex = index;
                 return true;
             }
@@ -130,20 +115,37 @@ function Session(sessionId) {
         return true;
     };
 
-    this.removeMessages = function(ws) {
-        if (!verifyPeer(ws)) {
+    this.removeMessages = function(peer) {
+        if (!verifyPeer(peer)) {
             return false;
         }
 
         for (var i in messages) {
             var message = messages[i];
-            if(message.peer === ws) {
-                self.removeMessage(ws, message);
+            if(message.peer === peer) {
+                self.removeMessage(peer, message);
             }
         }
 
         return true;
     };
+
+    this.getHistory = function(peer) {
+        if (!verify(peer)) {
+            console.log('get history failed because peer is not from this session');
+            return false;
+        }
+
+        // send only messages which doesn't belong to peer
+        for (var i in messages) {
+            var wrapper = messages[i];
+            if (peer !== wrapper.peer) {
+                peer.send(JSON.stringify(wrapper.message));
+            }
+        }
+
+        return true;
+    }
 
     this.close = function() {
         active.close();
