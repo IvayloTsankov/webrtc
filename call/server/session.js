@@ -159,8 +159,14 @@ function Session(sessionId) {
     }
 
     this.close = function() {
-        active.close();
-        passive.close();
+        if (active) {
+            active.close();
+        }
+
+        if (passive) {
+            passive.close();
+        }
+
         messages = [];
     };
 };
