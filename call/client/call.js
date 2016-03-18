@@ -232,7 +232,7 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
                     schannel.send(JSON.stringify({
                         'type': 'candidate',
                         'active_user': active,
-                        'session_id:': sessionId,
+                        'session_id': sessionId,
                         'payload': {
                             'message': JSON.stringify(e.candidate)
                         }
