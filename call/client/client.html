@@ -50,7 +50,7 @@
         var activeBuff = [];
         var passiveBuff = [];
 
-        var active = new WebSocket('ws://localhost:8000');
+        active = new WebSocket('ws://localhost:8000');
         active.onerror = error;
         active.onmessage = function(ev) {
             activeBuff.push(JSON.parse(ev.data));
@@ -67,7 +67,7 @@
             }
 
             // passive user enters the session
-            var passive = new WebSocket('ws://localhost:8000');
+            passive = new WebSocket('ws://localhost:8000');
             passive.onerror = error;
             passive.onmessage = function(ev) {
                 passiveBuff.push(JSON.parse(ev.data));
