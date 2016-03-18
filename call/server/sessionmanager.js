@@ -69,6 +69,18 @@ function SessionManager() {
 
         sessions = [];
     };
+
+    this.findPeerSession = function(peer) {
+        var keys = Object.keys(sessions);
+        for (var i in keys) {
+            var session = sessions[keys[i]];
+            if (session.isMember(peer)) {
+                return session;
+            }
+        }
+
+        return null;
+    };
 };
 
 
