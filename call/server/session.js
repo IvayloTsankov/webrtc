@@ -21,7 +21,7 @@ function Session(sessionId) {
         // 'to' variable is assigned to passive if message's active_user is true
         // and vise versa
         var to = packet.active_user ? passive : active;
-        console.log('session send to peer: ', packet);
+        console.log('session send to peer: ', packet.type);
         to.send(JSON.stringify(packet));
 
         return true;
@@ -61,6 +61,9 @@ function Session(sessionId) {
     };
 
     this.removePeer = function(peer) {
+        console.log('remove peer from session %d active: ',
+                    id, !!(peer === active)); 
+
         self.removeMessages(peer);
         if (peer === active) {
             active = null;
@@ -73,17 +76,20 @@ function Session(sessionId) {
         return true;
     };
 
+    this.isMember = function(peer) {
+        return !!(peer === active) || !!(peer === passive);
+    };
+
     this.isConnected = function() {
         return !!(active && passive);
     };
 
     this.addMessage = function(peer, packet) {
         if (!verify(peer)) {
-            console.log('fail to verify peer for packet: ', packet);
+            console.log('fail to verify peer for packet: ', packet.type);
             return false;
         }
 
-        console.log('add packet: ', packet);
         // Here we can save messages in db
         messages.push(packet);
 
@@ -93,15 +99,17 @@ function Session(sessionId) {
 
     this.removeMessage = function(peer, rPacket) {
         if (!verify(peer)) {
+            console.log('fail to remove message (invalid peer)');
             return false;
         }
 
-        var isActive = !!(peer === active) ? true : false;
+        var isActive = !!(peer === active);
         for (var i in messages) {
             var packet = messages[i];
             if (packet.active_user === isActive &&
                 packet.payload.message === rPacket.payload.message) {
                     messages.splice(i, 1);
+                    console.log('remove message: ', rPacket);
                     return true;
             }
         }
@@ -111,17 +119,16 @@ function Session(sessionId) {
 
     this.removeMessages = function(peer) {
         if (!verify(peer)) {
+            console.log('fail to remove message (invalid peer)');
             return false;
         }
 
-        var isActive = !!(peer === active) ? true : false;
-        for (var i in messages) {
-            var packet = messages[i];
-            if (packet.active_user === isActive) {
-                messages.splice(i, 1);
-            }
-        }
+        var isActive = !!(peer === active);
+        var filtered = messages.filter(function(it) {
+            return it.active_user !== isActive;
+        });
 
+        messages = filtered;
         return true;
     };
 
