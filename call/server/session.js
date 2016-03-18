@@ -61,6 +61,10 @@ function Session(sessionId) {
     };
 
     this.removePeer = function(peer) {
+        if (!peer) {
+            return false;
+        }
+
         console.log('remove peer from session %d active: ',
                     id, !!(peer === active)); 
 
