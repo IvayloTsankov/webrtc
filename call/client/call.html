@@ -13,7 +13,7 @@
     var local = document.getElementById('local');
     var remote = document.getElementById('remote');
 
-    var successs = function(pc) { 
+    var success = function(pc) { 
         console.log('call established');
     };
 
@@ -26,11 +26,18 @@
             'url': 'turn:turn-server.proznanie.bg:80',
             'username': 'proznanie',
             'credential': 'proznanie123'
-        }]
+        }],
+
+        'video': true,
+        'audio': true
     };
 
     var sessionId = generateSessionId();
     var active = true;
-    var call = new Call(success, fail, config, local, remote);
+
+    var ws = new WebSocket('ws://localhost:8000');
+    ws.onopen = function() {
+        call = new Call(success, fail, config, ws, sessionId, active, local, remote);
+    };
 </script>
 </html>

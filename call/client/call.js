@@ -87,7 +87,7 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
     };
 
     var attachMediaStream = function(dom, stream) {
-        dom.src = createObjectURL(stream);
+        dom.src = URL.createObjectURL(stream);
     };
 
     var gotStream = function(stream) {
@@ -169,7 +169,7 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
                 'active_user': active,
                 'session_id': sessionId,
                 'payload': {
-                    'message': JSON.stringify(answer.toJSON());
+                    'message': JSON.stringify(answer.toJSON())
                 }
             }));
         }
@@ -188,6 +188,12 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
     };
 
     function init() {
+        if (signallingChannel) {
+            schannel = signallingChannel;
+        } else {
+            throw 'InvalidChannelError';
+        }
+
         var conf = {
             iceServers: []
         };
@@ -226,7 +232,7 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
                     schannel.send(JSON.stringify({
                         'type': 'candidate',
                         'active_user': active,
-                        'session_id:', sessionId,
+                        'session_id:': sessionId,
                         'payload': {
                             'message': JSON.stringify(e.candidate)
                         }
