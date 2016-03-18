@@ -49,6 +49,24 @@
 
     var ws = new WebSocket('ws://localhost:8000');
     ws.onopen = function() {
+        if (active) {
+            var create = {
+                'type': 'create_session',
+                'active_user': true,
+                'session_id': sessionId
+            };
+
+            ws.send(JSON.stringify(create));
+        } else {
+            var join = {
+                'type': 'join_session',
+                'active_user': false,
+                'session_id': params.session_id
+            };
+
+            ws.send(JSON.stringify(join));
+        }
+
         call = new Call(success, fail, config, ws, sessionId, active, local, remote);
     };
 </script>
