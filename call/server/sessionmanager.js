@@ -15,13 +15,28 @@ function SessionManager() {
 
         var session = self.getSession(sessionId);
         if (session) {
-            console.log('session with id %d is already created', sessionId);
+            peer.send(JSON.stringify({
+                'type': 'response',
+                'message': 'session_exists'
+            }));
+
             return false;
         }
 
         session = new Session(sessionId);
         setSession(session, sessionId);
-        return session.addPeer(peer, userActive);
+
+        if (!session.addPeer(peer, userActive)) {
+            peer.send(JSON.stringify(new Error('Fail to add peer to session')));
+            return false;
+        }
+
+        peer.send(JSON.stringify({
+            'type': 'response',
+            'message': 'session_created'
+        }));
+
+        return true;
     };
 
     this.joinSession = function(peer, message) {
@@ -30,30 +45,50 @@ function SessionManager() {
 
         var session = self.getSession(sessionId);
         if (!session) {
-            console.log('no session with id: ', sessionId);
+            peer.send(JSON.stringify({
+                'type': 'response',
+                'type': 'no_session'
+            }));
+
             return false;
         }
 
-        session.addPeer(peer, userActive);
-        session.getHistory(peer);
-
-        var sessionStatus = session.isConnected();
-        console.log('session status: ', sessionStatus);
-
-        return sessionStatus;
-    };
-
-    this.deleteSession = function(ws, message) {
-        var sessionId = message.session_id;
-        var session = getSession(sessionId);;
-        if (session) {
-            session.close();
-            delete sessions[sessionId];
-
-            return true;
+        if (!session.addPeer(peer, userActive)) {
+            peer.send(JSON.stringify(new Error('Fail to add user to session')));
+            return false;
         }
 
-        console.log('try to delete uknown session');
+        if (!session.getHistory(peer)) {
+            peer.send(JSON.stringify(new Error('Fail to get history')));
+            return false;
+        }
+
+        peer.send(JSON.stringify({
+            'type': 'response',
+            'message': 'session_joined'
+        }));
+
+        console.log('session connected: ', session.isConnected());
+        return true;
+    };
+
+    this.deleteSession = function(peer, sessionId) {
+        var session = getSession(sessionId);;
+        if (session) {
+            if (session.isMember(peer)) {
+                session.close();
+                delete sessions[sessionId];
+                return true;
+            } else {
+                console.log('Try to delete session with non member user');
+                return false;
+            }
+        }
+
+        peer.send(JSON.stringify({
+            'type': 'response',
+            'message': 'no_session'
+        }));
         return false;
     };
 

@@ -17,45 +17,37 @@ console.log('listen on port: %d', port);
 
 var onclose = function(peer) {
     var session = sm.findPeerSession(peer);
-    session.removePeer(peer);
+    if (session) {
+        sm.deleteSession(peer, session.getId());
+    }
 };
 
-var onmessage = function(ws, rawMessage) {
-    var message = protocol.validate(ws, rawMessage);
+var onmessage = function(peer, rawMessage) {
+    var message = protocol.validate(peer, rawMessage);
     if (!message) {
-        console.log('Invalid message: ', rawMessage);
-        ws.close();
+        var e = new Error('Invalid JSON message');
+        peer.send(JSON.stringify(e));
+        peer.close();
         return;
     }
 
     console.log(message.type);
     switch(message.type) {
         case 'create_session':
-            if (!sm.createSession(ws, message)) {
-                ws.send(JSON.stringify(new Error('Fail to create session')));
-                ws.close();
-            }
-
+            sm.createSession(peer, message);
             break;
         case 'join_session':
-            if (!sm.joinSession(ws, message)) {
-                ws.send(JSON.stringify(new Error('No session with id: ' + message.session_id)));
-                ws.close();
-            }
-
+            sm.joinSession(peer, message);
             break;
         case 'delete_session':
-            if (!sm.deleteSession(message)) {
-                ws.close();
-            }
-
+            sm.deleteSession(peer, sessionId);
             break;
         case 'offer':
         case 'answer':
         case 'candidate':
             var session = sm.getSession(message.session_id);
             if (session) {
-                if (!session.addMessage(ws, message)) {
+                if (!session.addMessage(peer, message)) {
                     console.log('Fail to add message');
                 }
             } else {
@@ -68,10 +60,10 @@ var onmessage = function(ws, rawMessage) {
     }
 };
 
-wss.on('connection', function(ws) {
+wss.on('connection', function(peer) {
     console.log('new client');
 
-    clients.push(ws);
-    ws.on('message', function(msg) { onmessage(ws, msg); });
-    ws.on('close', function() { onclose(ws) });
+    clients.push(peer);
+    peer.on('message', function(msg) { onmessage(peer, msg); });
+    peer.on('close', function() { onclose(peer) });
 });
