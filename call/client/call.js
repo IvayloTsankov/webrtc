@@ -137,13 +137,13 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
         fail(err);
     };
 
-    var setOfferRemote = function(pc) {
+    var setOfferRemote = function() {
         if (!active) {
             pc.createAnswer(gotAnswer, failGetAnswer);
         }
     };
 
-    var failSetOfferRemote = function(pc) {
+    var failSetOfferRemote = function() {
         fail(err); 
     };
 
@@ -187,9 +187,40 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
         fail(err);
     };
 
+    var onmessage = function(e) {
+        try {
+            var packet = JSON.parse(e.data);
+        } catch (e) {
+            console.log('Fail to parse json');
+            return;
+        }
+
+        switch(packet.type) {
+            case 'offer':
+                var message = JSON.parse(packet.payload.message);
+                offer = new RTCSessionDescription(message);
+                pc.setRemoteDescription(offer, setOfferRemote, failSetOfferRemote);
+                break;
+            case 'answer':
+                var message = JSON.parse(packet.payload.message);
+                answer = new RTCSessionDescription(message);
+                pc.setRemoteDescription(answer, setRemoteAnswer, failSetRemoteAnswer);
+                break;
+            case 'candidate':
+                var message = JSON.parse(packet.payload.message);
+                var candidate = new RTCIceCandidate(message);
+                pc.addIceCandidate(candidate);
+                break;
+            default:
+                console.log('unknown message: ', e.data); 
+                break;
+        }
+    };
+
     function init() {
         if (signallingChannel) {
             schannel = signallingChannel;
+            schannel.onmessage = onmessage;
         } else {
             throw 'InvalidChannelError';
         }
