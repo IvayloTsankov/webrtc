@@ -5,7 +5,7 @@
 </head>
 <body>
     <video id="local" autoplay></video>
-    <video id="remote"></video>
+    <video id="remote" autoplay></video>
 </body>
 <script src="adapter.js"></script>
 <script src="call.js"></script>
@@ -19,7 +19,7 @@
         });
 
         return result;
-    }
+    };
 
     var local = document.getElementById('local');
     var remote = document.getElementById('remote');
@@ -43,8 +43,8 @@
         'audio': true
     };
 
-    var sessionId = generateSessionId();
     var params = getJsonFromUrl();
+    var sessionId = params.session_id;
     var active = params.active === 'true' ? true : false;
 
     var ws = new WebSocket('ws://localhost:8000');
