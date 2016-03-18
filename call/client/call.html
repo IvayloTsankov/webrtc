@@ -10,6 +10,17 @@
 <script src="adapter.js"></script>
 <script src="call.js"></script>
 <script>
+    function getJsonFromUrl() {
+        var query = location.search.substr(1);
+        var result = {};
+        query.split("&").forEach(function(part) {
+            var item = part.split("=");
+            result[item[0]] = decodeURIComponent(item[1]);
+        });
+
+        return result;
+    }
+
     var local = document.getElementById('local');
     var remote = document.getElementById('remote');
 
@@ -33,7 +44,8 @@
     };
 
     var sessionId = generateSessionId();
-    var active = true;
+    var params = getJsonFromUrl();
+    var active = params.active === 'true' ? true : false;
 
     var ws = new WebSocket('ws://localhost:8000');
     ws.onopen = function() {
