@@ -58,15 +58,15 @@ function SessionManager() {
             return false;
         }
 
-        if (!session.getHistory(peer)) {
-            peer.send(JSON.stringify(new Error('Fail to get history')));
-            return false;
-        }
-
         peer.send(JSON.stringify({
             'type': 'response',
             'message': 'session_joined'
         }));
+
+        if (!session.getHistory(peer)) {
+            peer.send(JSON.stringify(new Error('Fail to get history')));
+            return false;
+        }
 
         console.log('session connected: ', session.isConnected());
         return true;
