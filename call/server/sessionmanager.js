@@ -73,7 +73,7 @@ function SessionManager() {
     };
 
     this.deleteSession = function(peer, sessionId) {
-        var session = getSession(sessionId);;
+        var session = self.getSession(sessionId);;
         if (session) {
             if (session.isMember(peer)) {
                 session.close();
