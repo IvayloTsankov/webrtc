@@ -69,16 +69,22 @@ var generateSessionId = function() {
 //      var c = new Call(success, fail, config);
 function Call(success, fail, config, signallingChannel, sessionId, active, localVideo, remoteVideo) {
     var self = this;
+
     var pc = null;
     var offer = null;
     var answer = null;
+    var offerSet = false;
+    var answerSet = false;
+    var constraints = {};
+
     var localStream = null;
     var remoteStream = null;
+
     var filterCandidate = null;
     var filterSDP = null;
-    var schannel = null;
 
-    var constraints = {};
+    var schannel = null; // signalling channel
+    var sbuffer = []; // cache early messages
 
     var iceSuccess = function(e) {};
 
@@ -90,12 +96,25 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
         dom.src = URL.createObjectURL(stream);
     };
 
+    var flushSignalling = function() {
+        for (var i in sbuffer) {
+            onmessage(sbuffer[i]);
+        }
+
+        sbuffer = [];
+    };
+
     var gotStream = function(stream) {
+        console.log('got stream');
+
         localStream = stream;
         attachMediaStream(localVideo, stream);
         pc.addStream(stream);
 
+        flushSignalling();
+
         if (active) {
+            console.log('create offer');
             pc.createOffer(gotOffer, failGetOffer);
         }
     };
@@ -105,7 +124,9 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
     };
 
     var gotOffer = function(sdp) {
+        console.log('got offer');
         if (filterSDP) {
+            console.log('filter offer');
             offer = filterSDP(sdp, 'offer');
         } else {
             offer = sdp;
@@ -120,14 +141,16 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
 
     var setOfferLocal = function() {
         if (active) {
-            schannel.send(JSON.stringify({
+            offerSet = true;
+            console.log('send offer');
+            /*schannel.send(JSON.stringify({
                 'type': 'offer',
                 'active_user': true,
                 'session_id': sessionId,
                 'payload': {
                     'message': JSON.stringify(offer.toJSON())
                 }
-            }));
+            }));*/
         }
 
         //pc2.setRemoteDescription(offer, setOfferRemote, failSetOfferRemote);
@@ -137,18 +160,22 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
         fail(err);
     };
 
-    var setOfferRemote = function() {
+    var setRemoteOffer = function() {
         if (!active) {
+            offerSet = true;
+            console.log('create answer');
             pc.createAnswer(gotAnswer, failGetAnswer);
         }
     };
 
-    var failSetOfferRemote = function() {
+    var failSetRemoteOffer = function() {
         fail(err); 
     };
 
     var gotAnswer = function(ans) {
+        console.log('got answer');
         if (filterSDP) {
+            console.log('filter answer');
             answer = filterSDP(ans, 'answer');
         } else {
             answer = ans;
@@ -164,14 +191,16 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
     var setAnswerLocal = function() {
         console.log('answer is set locally');
         if (!active) {
-            schannel.send(JSON.stringify({
+            answerSet = true;
+            console.log('send answer');
+            /*schannel.send(JSON.stringify({
                 'type': 'answer',
                 'active_user': active,
                 'session_id': sessionId,
                 'payload': {
                     'message': JSON.stringify(answer.toJSON())
                 }
-            }));
+            }));*/
         }
     };
 
@@ -180,14 +209,41 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
     };
 
     var setRemoteAnswer = function() {
-        console.log('negotiation done');
+        answerSet = true;
+        console.log('set answer remote');
     };
 
     var failSetRemoteAnswer = function(err) {
         fail(err);
     };
 
+    var setIceCandidate = function(message) {
+        var candidate = new RTCIceCandidate(message);
+        pc.addIceCandidate(candidate).then(function() {
+            console.log('set ice candidate successfuly');
+        }).catch(function() {
+            console.err('fail to set Ice candidate');
+        });
+    };
+
+    var setSDP = function(message) {
+        sdp = new RTCSessionDescription(message);
+        if (sdp.type === 'offer') {
+            pc.setRemoteDescription(sdp, setRemoteOffer, failSetRemoteOffer);
+        } else if (sdp.type === 'answer') {
+            pc.setRemoteDescription(sdp, setRemoteAnswer, failSetRemoteAnswer);
+        } else {
+            throw 'InvalidSDPTypeError';
+        }
+    };
+
     var onmessage = function(e) {
+        if (localStream == null) {
+            console.log('early message');
+            sbuffer.push(e);
+            return;
+        }
+
         try {
             var packet = JSON.parse(e.data);
         } catch (e) {
@@ -195,21 +251,18 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
             return;
         }
 
+        console.log('receive message: ', packet.type);
         switch(packet.type) {
             case 'offer':
-                var message = JSON.parse(packet.payload.message);
-                offer = new RTCSessionDescription(message);
-                pc.setRemoteDescription(offer, setOfferRemote, failSetOfferRemote);
-                break;
             case 'answer':
                 var message = JSON.parse(packet.payload.message);
-                answer = new RTCSessionDescription(message);
-                pc.setRemoteDescription(answer, setRemoteAnswer, failSetRemoteAnswer);
+                setSDP(message);
+
                 break;
             case 'candidate':
                 var message = JSON.parse(packet.payload.message);
-                var candidate = new RTCIceCandidate(message);
-                pc.addIceCandidate(candidate);
+                setIceCandidate(message);
+
                 break;
             default:
                 console.log('unknown message: ', e.data); 
@@ -260,24 +313,35 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
         pc.onicecandidate = function(e) {
             if (e.candidate) {
                 if (filterCandidate(e.candidate)) {
-                    schannel.send(JSON.stringify({
+                    console.log('send ice candidate');
+                    /*schannel.send(JSON.stringify({
                         'type': 'candidate',
                         'active_user': active,
                         'session_id': sessionId,
                         'payload': {
                             'message': JSON.stringify(e.candidate)
                         }
-                    }));
+                    }));*/
                     //pc2.addIceCandidate(e.candidate, iceSuccess, iceFail);
                 }
             } else {
-                console.log('end candidate for pc');
+                var sdp = pc.localDescription;
+                var message = {
+                    'type': active ? 'offer' : 'answer',
+                    'active_user': active,
+                    'session_id': sessionId,
+                    'payload': {
+                        'message': JSON.stringify(sdp.toJSON())
+                    }
+                }
+
+                schannel.send(JSON.stringify(message));
             }
         };
 
         pc.onaddstream = function(e) {
             remoteStream = e.stream;
-            console.log('connection established');
+            console.log('webrtc connection established');
             attachMediaStream(remoteVideo, e.stream);
             success(pc);
         };
