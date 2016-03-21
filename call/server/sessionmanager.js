@@ -78,6 +78,8 @@ function SessionManager() {
             if (session.isMember(peer)) {
                 session.close();
                 delete sessions[sessionId];
+
+                console.log('delete session: ', sessionId);
                 return true;
             } else {
                 console.log('Try to delete session with non member user');
