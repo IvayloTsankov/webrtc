@@ -69,5 +69,9 @@
 
         call = new Call(success, fail, config, ws, sessionId, active, local, remote);
     };
+
+    ws.onclose = function() {
+        console.log('Connection closed');
+    };
 </script>
 </html>
