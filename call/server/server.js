@@ -34,13 +34,22 @@ var onmessage = function(peer, rawMessage) {
     console.log(message.type);
     switch(message.type) {
         case 'create_session':
-            sm.createSession(peer, message);
+            if (!sm.createSession(peer, message)) {
+                peer.close();
+            }
+
             break;
         case 'join_session':
-            sm.joinSession(peer, message);
+            if (!sm.joinSession(peer, message)) {
+                peer.close();
+            }
+
             break;
         case 'delete_session':
-            sm.deleteSession(peer, sessionId);
+            if (!sm.deleteSession(peer, sessionId)) {
+                peer.close();
+            }
+
             break;
         case 'offer':
         case 'answer':
@@ -52,11 +61,13 @@ var onmessage = function(peer, rawMessage) {
                 }
             } else {
                 console.log('Fail to get session');
+                peer.close();
             }
 
             break;
         default:
             console.log('unsupported message');
+            peer.close();
     }
 };
 
