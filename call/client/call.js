@@ -143,14 +143,14 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
         if (active) {
             offerSet = true;
             console.log('send offer');
-            /*schannel.send(JSON.stringify({
+            schannel.send(JSON.stringify({
                 'type': 'offer',
                 'active_user': true,
                 'session_id': sessionId,
                 'payload': {
                     'message': JSON.stringify(offer.toJSON())
                 }
-            }));*/
+            }));
         }
 
         //pc2.setRemoteDescription(offer, setOfferRemote, failSetOfferRemote);
@@ -193,14 +193,14 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
         if (!active) {
             answerSet = true;
             console.log('send answer');
-            /*schannel.send(JSON.stringify({
+            schannel.send(JSON.stringify({
                 'type': 'answer',
                 'active_user': active,
                 'session_id': sessionId,
                 'payload': {
                     'message': JSON.stringify(answer.toJSON())
                 }
-            }));*/
+            }));
         }
     };
 
@@ -314,18 +314,18 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
             if (e.candidate) {
                 if (filterCandidate(e.candidate)) {
                     console.log('send ice candidate');
-                    /*schannel.send(JSON.stringify({
+                    schannel.send(JSON.stringify({
                         'type': 'candidate',
                         'active_user': active,
                         'session_id': sessionId,
                         'payload': {
                             'message': JSON.stringify(e.candidate)
                         }
-                    }));*/
+                    }));
                     //pc2.addIceCandidate(e.candidate, iceSuccess, iceFail);
                 }
             } else {
-                var sdp = pc.localDescription;
+                /*var sdp = pc.localDescription;
                 var message = {
                     'type': active ? 'offer' : 'answer',
                     'active_user': active,
@@ -335,7 +335,7 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
                     }
                 }
 
-                schannel.send(JSON.stringify(message));
+                schannel.send(JSON.stringify(message));*/
             }
         };
 
