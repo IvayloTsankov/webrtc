@@ -1,3 +1,4 @@
+=============== CLIENT -> SERVER =======================
 // create session or join to session
 {
     'type': 'create_session/join_session',
@@ -12,6 +13,7 @@
     'session_id': 475984359,
 }
 
+
 // offer or answer or candidate
 {
     'type': 'offer/answer/candidate',
@@ -20,4 +22,40 @@
     'payload': {
         'message': 'stringified offer/answer/candidate is here'
     }
+}
+
+
+=============== SERVER -> CLIENT =======================
+{
+    'type': 'init_call',
+}
+
+// response of 'create_session'
+{
+    'type': 'response',
+    'message': 'session_created'
+}
+
+// response of 'create_session'
+{
+    'type': 'response',
+    'message': 'session_exists'
+}
+
+// response of 'join_session'
+{
+    'type': 'response',
+    'message': 'session_joined'
+}
+
+// response of 'join_session'
+{
+    'type': 'response',
+    'message': 'no_session'
+}
+
+// if client send message which is not json
+{
+    'type': 'error',
+    'message': 'Invalid JSON message'
 }
