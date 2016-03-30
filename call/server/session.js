@@ -88,6 +88,10 @@ function Session(sessionId) {
         return !!(active && passive);
     };
 
+    this.isPeerActive = function(peer) {
+        return !!(peer === active);
+    };
+
     this.addMessage = function(peer, packet) {
         if (!verify(peer)) {
             console.log('fail to verify peer for packet: ', packet.type);
