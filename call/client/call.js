@@ -350,9 +350,22 @@ function Call(success, fail, config, signallingChannel, sessionId, active, local
     };
 
     self.close = function() {
-        pc.removeStream(remoteStream);
-        localStream.stop();
-        remoteStream.stop();
+        var lstreams = pc.getLocalStreams();
+        for (var i in lstreams) {
+            var tracks = lstreams[i].getTracks();
+            for (var t in tracks) {
+                tracks[t].stop();
+            }
+        }
+
+        var rstreams = pc.getRemoteStreams();
+        for (var i in rstreams) {
+            var tracks = rstreams[i].getTracks();
+            for (var t in tracks) {
+                tracks[t].stop();
+            }
+        }
+
         pc.close();
         pc = null;
     };
