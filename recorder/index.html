@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<body>
+    <audio id="audio_output"></audio>
+    <button id="record">Record</button>
+    <button id="toggle">Pause</button>
+    <button id="stop">Stop</button>
+    <button id="clear">Clear</button>
+    <button id="download">Download</button>
+</body>
+<script src="./recorder.js"></script>
+<script>
+    var audio = document.getElementById('audio_output');
+    var record = document.getElementById('record');
+    var toggle = document.getElementById('toggle');
+    var stop = document.getElementById('stop');
+    var clear = document.getElementById('clear');
+    var download = document.getElementById('download');
+
+    navigator.mediaDevices.getUserMedia({'audio': true}).then((stream) => {
+        //window.recorder = new RTCRecorder(stream, 'audio');
+        console.log(stream);
+        audio.src = window.URL.createObjectURL(stream);
+
+        var recorder = new Recorder(stream, null);
+        record.onclick = () => {
+            recorder.start()
+        }
+        toggle.onclick = () => {
+            if (toggle.innerText === 'Pause') {
+                recorder.pause();
+                toggle.innerText = 'Resume';
+            } else {
+                recorder.resume()
+                toggle.innerText = 'Pause';
+            }
+        }
+        stop.onclick = () => {
+            recorder.stop();
+        }
+        clear.onclick = () => {
+            recorder.clear();
+        }
+        download.onclick = () => {
+            recorder.download();
+        }
+
+        window.audio_output = audio_output;
+        window.recorder = recorder;
+    }).catch((e) => {
+        console.error(e);
+    });
+</script>
+</html>

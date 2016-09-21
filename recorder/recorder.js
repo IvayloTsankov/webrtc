@@ -1,49 +1,84 @@
 'use strict'
 
-function Recorder(stream) {
-    var blobs = [];
-    var rec = null;
-    var defaultName = 'video.webm';
-    var defaultType = 'video/webm';
-    var defaultOptions = { 'mimeType': defaultType, bitsPerSecond: 100000 };
-    var dataInterval = 1000; // 1 sec
 
-    var saveData = function(ev) {
-        blobs.push(ev.data);
-    };
+/*
+ * options:
+ *    audioBitsPerSecond: 128000
+ *    videoBitsPerSecond: 2500000
+ *    mimeType: 'video/mp4'
+ */
+class Recorder {
+    constructor(stream, options) {
+      this.defaults = {
+        'name': 'video.webm',
+        'mimeType': 'video/webm',
+        'audioBitsPerSecond': 128000,
+        'videoBitsPerSecond': 2500000,
+        'dataInterval': 1000    // 1 second
+      };
 
-    function init() {
-        rec = new MediaRecorder(stream);
-        rec.ondataavailable = saveData;
-    };
+      this.config = {};
+      if (!options) {
+        this.config = this.defaults;
+      } else {
+        Object.keys(this.defaults).forEach((key) => {
+          if (!options[key]) {
+            this.config[key] = this.defaults[key];
+          }
+        });
+      }
 
+      console.log(this.config);
 
-    this.start = function() {
-        rec.start(dataInterval);
-    };
+      this.blobs = [];
+      this.rec = new MediaRecorder(stream, this.config);
+      this.rec.ondataavailable = this._saveData.bind(this);
+    }
 
-    this.stop = function() {
-        rec.stop();
-    };
+    _saveData(ev) {
+      this.blobs.push(ev.data);
+    }
 
-    this.download = function(name) {
-        var superBlob = new Blob(blobs, { 'type': defaultType }); 
-        
-        var url = window.URL.createObjectURL(superBlob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = defaultName;
+    start() {
+      this.rec.start(this.config.name);
+    }
 
-        a.style.display = 'none'; // hide
-        document.body.appendChild(a);
-        a.click();
+    pause() {
+      this.rec.pause();
+    }
 
-        setTimeout(function() {
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-        }, 100);
-    };
+    resume() {
+      this.rec.resume();
+    }
 
-    init();
+    stop() {
+      this.rec.stop();
+    }
+
+    clear() {
+      if (this.rec.state === 'recording') {
+        this.rec.stop();
+      }
+
+      this.blobs = [];
+    }
+
+    download(name) {
+      var superBlob = new Blob(this.blobs, { 'type': this.config.mimeType });
+
+      var url = window.URL.createObjectURL(superBlob);
+      var a = document.createElement('a');
+      a.href = url;
+      a.download = name || this.config.name;
+
+      a.style.display = 'none'; // hide
+      document.body.appendChild(a);
+      a.click();
+
+      setTimeout(function() {
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+      }, 100);
+    }
 };
 
