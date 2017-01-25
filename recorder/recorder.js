@@ -95,7 +95,7 @@ class Recorder {
         let data = this.merge();
         if (data.size == 0) {
           console.error('Failed to upload empty file');
-          return;
+          return reject('Failed to upload empty file');
         }
 
         let uploadName = this._prepareName(name);
@@ -110,9 +110,9 @@ class Recorder {
         }).then((response) => {
           response.text().then((data) => {
             if (data.type == 'error') {
-              return reject(data);
+              return reject(data.message);
             } else {
-              return resolve(data);
+              return resolve(data.message);
             }
           }).catch(reject);
         }).catch(reject);
