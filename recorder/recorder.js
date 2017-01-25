@@ -1,6 +1,5 @@
 'use strict'
 
-
 /*
  * options:
  *    audioBitsPerSecond: 128000
@@ -22,13 +21,9 @@ class Recorder {
         this.config = this.defaults;
       } else {
         Object.keys(this.defaults).forEach((key) => {
-          if (!options[key]) {
-            this.config[key] = this.defaults[key];
-          }
+          this.config[key] = options[key] || this.defaults[key];
         });
       }
-
-      console.log(this.config);
 
       this.blobs = [];
       this.rec = new MediaRecorder(stream, this.config);
@@ -48,37 +43,87 @@ class Recorder {
     }
 
     resume() {
-      this.rec.resume();
+      if (this.rec.state == 'paused') {
+        this.rec.resume();
+      } else {
+        console.error('Failed to resume webrtc recorder. Bad state %s',
+                      this.rec.state);
+      }
     }
 
     stop() {
-      this.rec.stop();
+      if (this.rec.state !== 'inactive') {
+        this.rec.stop();
+      }
+    }
+
+    get state() {
+      return this.rec.state;
     }
 
     clear() {
-      if (this.rec.state === 'recording') {
-        this.rec.stop();
-      }
-
+      this.stop();
       this.blobs = [];
     }
 
-    download(name) {
+    merge() {
       var superBlob = new Blob(this.blobs, { 'type': this.config.mimeType });
+      return superBlob;
+    }
 
-      var url = window.URL.createObjectURL(superBlob);
-      var a = document.createElement('a');
+    download(name) {
+      let downloadName = this._prepareName(name);
+      let data = this.merge();
+
+      let url = window.URL.createObjectURL(data);
+      let a = document.createElement('a');
       a.href = url;
-      a.download = name || this.config.name;
+      a.download = downloadName;
 
       a.style.display = 'none'; // hide
       document.body.appendChild(a);
       a.click();
 
-      setTimeout(function() {
+      setTimeout(() => {
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
       }, 100);
     }
+
+    upload(url, name) {
+      return new Promise((resolve, reject) => {
+        let data = this.merge();
+        if (data.size == 0) {
+          console.error('Failed to upload empty file');
+          return;
+        }
+
+        let uploadName = this._prepareName(name);
+
+        let form = new FormData();
+        form.append('file', data, uploadName)
+
+        fetch(url, {
+          'method': 'POST',
+          'mode': 'cors',
+          'body': form
+        }).then((response) => {
+          response.text().then((data) => {
+            if (data.type == 'error') {
+              return reject(data);
+            } else {
+              return resolve(data);
+            }
+          }).catch(reject);
+        }).catch(reject);
+      });
+    }
+
+    _prepareName(name) {
+      let filename = name || this.config.name;
+      let ext = this.config.mimeType.split('/')[1];
+      return filename + '.' + ext;
+    }
 };
 
+export default Recorder;
