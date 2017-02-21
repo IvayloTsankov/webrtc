@@ -1,10 +1,15 @@
 'use strict'
 
-/*
+
+/* Recorder is used to record audio and (or) video streams from
+ * webrtc stream.
+ *
  * options:
  *    audioBitsPerSecond: 128000
  *    videoBitsPerSecond: 2500000
  *    mimeType: 'video/mp4'
+ *
+ * WARNING: Firefox doesn't support config for MediaRecorder
  */
 class Recorder {
     constructor(stream, options) {
@@ -26,7 +31,16 @@ class Recorder {
       }
 
       this.blobs = [];
-      this.rec = new MediaRecorder(stream, this.config);
+
+      // Sad but true. (UGLY)
+      let isFirefox = navigator.userAgent.indexOf("Firefox") != -1;
+      if (isFirefox) {
+        this.rec = new MediaRecorder(stream);
+        console.warn("Recorder config is ignored due to Firefox MediaRecorder doesn't support config");
+      } else {
+        this.rec = new MediaRecorder(stream, this.config);
+      }
+
       this.rec.ondataavailable = this._saveData.bind(this);
     }
 
@@ -92,30 +106,36 @@ class Recorder {
 
     upload(url, name) {
       return new Promise((resolve, reject) => {
-        let data = this.merge();
-        if (data.size == 0) {
-          console.error('Failed to upload empty file');
-          return reject('Failed to upload empty file');
-        }
+        // WARNING: Firefox emits the data a little bit later
+        // after you call rec.stop(). While Chrome/Chromium emits the
+        // data on a specified time interval (see the config).
+        // This setTimeout is here to prevent uploading a empty file on FF
+        setTimeout(() => {
+          let data = this.merge();
+          if (data.size == 0) {
+            console.error('Failed to upload empty file');
+            return reject('Failed to upload empty file');
+          }
 
-        let uploadName = this._prepareName(name);
+          let uploadName = this._prepareName(name);
 
-        let form = new FormData();
-        form.append('file', data, uploadName)
+          let form = new FormData();
+          form.append('file', data, uploadName)
 
-        fetch(url, {
-          'method': 'POST',
-          'mode': 'cors',
-          'body': form
-        }).then((response) => {
-          response.text().then((data) => {
-            if (data.type == 'error') {
-              return reject(data.message);
-            } else {
-              return resolve(data.message);
-            }
+          fetch(url, {
+            'method': 'POST',
+            'mode': 'cors',
+            'body': form
+          }).then((response) => {
+            response.json().then((data) => {
+              if (data.type == 'error') {
+                return reject(data.message);
+              } else {
+                return resolve(data.message);
+              }
+            }).catch(reject);
           }).catch(reject);
-        }).catch(reject);
+        }, 500);
       });
     }
 
